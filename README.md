@@ -12,7 +12,7 @@ A lightweight Windows desktop application that prevents screen lock and idle tim
 
 ## Screenshots
 
-> *(Add screenshots here)*
+> ![alt text](image.png)
 
 ## Tech Stack
 
