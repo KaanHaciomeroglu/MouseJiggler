@@ -45,7 +45,3 @@ The output will be at `dist/MouseJiggler.exe` — no Python installation require
 - Prevent screen lock during long meetings or presentations
 - Keep remote desktop sessions alive
 - Avoid idle timeouts in corporate environments
-
-## License
-
-MIT
