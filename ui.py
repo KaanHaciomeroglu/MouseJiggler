@@ -4,6 +4,7 @@ import ctypes
 import customtkinter as ctk
 from jiggler import JigglerThread
 from tray import TrayIcon
+from utils import base_path
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -15,9 +16,9 @@ class JigglerApp(ctk.CTk):
         self.title("Mouse Jiggler")
         self.geometry("320x360")
         self.resizable(False, False)
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("MouseJiggler")
-        _base = sys._MEIPASS if hasattr(sys, "_MEIPASS") else os.path.dirname(os.path.abspath(__file__))
-        self.iconbitmap(os.path.join(_base, "icon.ico"))
+        if sys.platform == "win32":
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("MouseJiggler")
+        self.iconbitmap(os.path.join(base_path(), "icon.ico"))
         self.protocol("WM_DELETE_WINDOW", self._quit)
 
         self._jiggler: JigglerThread | None = None
@@ -26,8 +27,8 @@ class JigglerApp(ctk.CTk):
         self._build_ui()
         self._tray = TrayIcon(
             on_show=self._show_window,
-            on_toggle=self._toggle,
-            on_quit=self._quit,
+            on_toggle=lambda: self.after(0, self._toggle),
+            on_quit=lambda: self.after(0, self._quit),
         )
         self._tray.start()
 
@@ -39,7 +40,7 @@ class JigglerApp(ctk.CTk):
         )
 
         self._status_label = ctk.CTkLabel(
-            self, text="Durum: PASIF", font=("Segoe UI", 14), text_color="#888"
+            self, text="Durum: PASiF", font=("Segoe UI", 14), text_color="#888"
         )
         self._status_label.grid(row=1, column=0, pady=(0, 20))
 
@@ -92,14 +93,14 @@ class JigglerApp(ctk.CTk):
         ).grid(row=4, column=0, pady=(20, 8))
 
     def _on_interval_change(self, val):
-        sn = int(val)
+        sn = round(val)
         self._interval_val.configure(text=f"{sn} sn")
         if self._jiggler:
             self._jiggler.interval = sn
             self._status_label.configure(text=f"Durum: AKTiF  ({sn} sn'de bir)")
 
     def _on_pixels_change(self, val):
-        px = int(val)
+        px = round(val)
         self._pixels_val.configure(text=f"{px} px")
         if self._jiggler:
             self._jiggler.pixels = px
@@ -113,16 +114,20 @@ class JigglerApp(ctk.CTk):
     def _start(self):
         self._active = True
         self._jiggler = JigglerThread()
-        self._jiggler.interval = int(self._interval_slider.get())
-        self._jiggler.pixels = int(self._pixels_slider.get())
+        self._jiggler.interval = round(self._interval_slider.get())
+        self._jiggler.pixels = round(self._pixels_slider.get())
         self._jiggler.start()
         self._toggle_btn.configure(text="DURDUR", fg_color="#c0392b", hover_color="#96281b")
-        self._status_label.configure(text=f"Durum: AKTiF  ({self._jiggler.interval} sn'de bir)", text_color="#2ecc71")
+        self._status_label.configure(
+            text=f"Durum: AKTiF  ({self._jiggler.interval} sn'de bir)",
+            text_color="#2ecc71",
+        )
 
     def _stop(self):
         self._active = False
         if self._jiggler:
             self._jiggler.stop()
+            self._jiggler.join(timeout=2)
             self._jiggler = None
         self._toggle_btn.configure(text="BAŞLAT", fg_color="#2a9d2a", hover_color="#1e7a1e")
         self._status_label.configure(text="Durum: PASiF", text_color="#888")
@@ -137,5 +142,7 @@ class JigglerApp(ctk.CTk):
     def _quit(self):
         if self._jiggler:
             self._jiggler.stop()
+            self._jiggler.join(timeout=2)
         self._tray.stop()
         self.quit()
+        self.destroy()

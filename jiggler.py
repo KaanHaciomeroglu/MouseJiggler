@@ -1,7 +1,11 @@
+import time
 import threading
+import logging
 import pyautogui
 
-pyautogui.FAILSAFE = False
+pyautogui.FAILSAFE = False  # tray "Çıkış" ile durdurmak için köşe-kaçış devre dışı
+
+logger = logging.getLogger(__name__)
 
 
 class JigglerThread(threading.Thread):
@@ -14,10 +18,9 @@ class JigglerThread(threading.Thread):
 
     def run(self):
         while not self._stop_event.is_set():
-            elapsed = 0.0
-            while elapsed < self.interval and not self._stop_event.is_set():
+            deadline = time.monotonic() + self.interval
+            while time.monotonic() < deadline and not self._stop_event.is_set():
                 self._stop_event.wait(0.2)
-                elapsed += 0.2
             if not self._stop_event.is_set():
                 self._move()
 
@@ -25,7 +28,10 @@ class JigglerThread(threading.Thread):
         moves = [(self.pixels, 0), (-self.pixels, 0), (0, self.pixels), (0, -self.pixels)]
         dx, dy = moves[self._direction % 4]
         self._direction += 1
-        pyautogui.moveRel(dx, dy, duration=0.1)
+        try:
+            pyautogui.moveRel(dx, dy, duration=0.1)
+        except Exception:
+            logger.exception("Mouse hareketi başarısız")
 
     def stop(self):
         self._stop_event.set()

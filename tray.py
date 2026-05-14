@@ -1,16 +1,9 @@
 import os
-import sys
 import pystray
 from PIL import Image
+from utils import base_path
 
-
-def _base_path():
-    if hasattr(sys, "_MEIPASS"):
-        return sys._MEIPASS
-    return os.path.dirname(os.path.abspath(__file__))
-
-
-_ICON_PATH = os.path.join(_base_path(), "icon.ico")
+_ICON_PATH = os.path.join(base_path(), "icon.ico")
 
 
 def _create_icon_image():
@@ -29,16 +22,12 @@ class TrayIcon:
             pystray.MenuItem("Aç", lambda: self._on_show(), default=True),
             pystray.MenuItem("Başlat / Durdur", lambda: self._on_toggle()),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Çıkış", lambda: self._quit()),
+            pystray.MenuItem("Çıkış", lambda: self._on_quit()),
         )
         self._icon = pystray.Icon("MouseJiggler", _create_icon_image(), "Mouse Jiggler", menu)
         self._icon.run_detached()
 
-    def _quit(self):
-        self._on_quit()
-        if self._icon:
-            self._icon.stop()
-
     def stop(self):
         if self._icon:
             self._icon.stop()
+            self._icon = None
